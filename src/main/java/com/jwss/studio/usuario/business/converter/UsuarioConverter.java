@@ -122,6 +122,26 @@ public class UsuarioConverter {
                 .build();
     }
 
+    public Endereco paraEnderecoEntiy(EnderecoDTO dto, Long idUsuario){
+        return Endereco.builder()
+
+                .rua(dto.getRua())
+                .numero(dto.getNumero())
+                .complemento(dto.getComplemento())
+                .cidade(dto.getCidade())
+                .estado(dto.getEstado())
+                .cep(dto.getCep())
+                .usuario_id(idUsuario)
+                .build();
+    }
+    public Telefone paraTelefoneEntity(TelefoneDTO dto, Long idUsuario){
+        return  Telefone.builder()
+                .ddd(dto.getDdd())
+                .numero(dto.getNumero())
+                .usuario_id(idUsuario)
+                .build();
+    }
+
 
 
 
