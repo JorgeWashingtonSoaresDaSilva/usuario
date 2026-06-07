@@ -6,6 +6,7 @@ import com.jwss.studio.usuario.infrastructure.entity.Usuario;
 import com.jwss.studio.usuario.infrastructure.excepitios.ConflictExcepition;
 import com.jwss.studio.usuario.infrastructure.excepitios.ResourceNotFoundExcepition;
 import com.jwss.studio.usuario.infrastructure.repository.UsuarioRepository;
+import com.jwss.studio.usuario.infrastructure.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,11 +19,12 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioConverter usuarioConverter;
-    private final PasswordEncoder PasswordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public UsuarioDTO salvaUsuario(UsuarioDTO usuarioDTO){
         emailExiste(usuarioDTO.getEmail());
-        usuarioDTO.setSenha(PasswordEncoder.encode(usuarioDTO.getSenha()));
+        usuarioDTO.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
         Usuario usuario = usuarioConverter.paraUsuario(usuarioDTO);
         return  usuarioConverter.paraUsuarioDTO(usuarioRepository.save(usuario));
     }
@@ -48,5 +50,22 @@ public class UsuarioService {
 
     public void deletaUsuarioPorEmail(String email){
         usuarioRepository.deleteByEmail(email);
+    }
+
+    public UsuarioDTO atualizacoesUsuario(String token, UsuarioDTO dto){
+        // aqui buscamos o email do usuario atraves do token ( para tirar obrigatóriedade do email)
+        String email = jwtUtil.exttraiEmailToken(token.substring(7));
+        // verificamos se senha foi alterada para podermos criptogafar, caso null não fazemos nada
+        dto.setSenha(dto.getSenha() != null ? passwordEncoder.encode(dto.getSenha()) : null);
+        // buscamos dados do usuario do banco de dados
+        Usuario usuarioEntity = usuarioRepository.findByEmail(email).orElseThrow( () ->
+        new ResourceNotFoundExcepition("Email não localizado"));
+        // mesclamos os dados que recebemos na riquisição DTO com os dados do banco de dados
+        Usuario usuario = usuarioConverter.updateUsuario(dto,usuarioEntity);
+
+        // salvamos os dados do usuario convertido e depois pegamos o retorno e covertemos para usuarioDTO
+        return usuarioConverter.paraUsuarioDTO(usuarioRepository.save(usuario));
+
+
     }
 }
